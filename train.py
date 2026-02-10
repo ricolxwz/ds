@@ -1,18 +1,19 @@
 """
-deepspeed --num_gpus=1 train.py \
-  --model_name_or_path gpt2 \
-  --dataset_name wikitext \
+CUDA_VISIBLE_DEVICES=0 deepspeed train.py \
+  --model_name_or_path ./pythia-410m \
+  --dataset_name ./wikitext-2-raw-v1 \
   --dataset_config wikitext-2-raw-v1 \
-  --output_dir ./outputs \
+  --output_dir ./outputs_pythia \
   --deepspeed ./ds_config.json \
-  --per_device_train_batch_size 1 \
+  --per_device_train_batch_size 2 \
+  --max_length 512 \
   --num_train_epochs 1
 """
 
 import os
 import argparse
 import torch
-from datasets import load_dataset
+from datasets import load_from_disk
 from transformers import (
     AutoTokenizer,
     AutoModelForCausalLM,
@@ -23,6 +24,7 @@ from transformers import (
 
 def parse_args():
     p = argparse.ArgumentParser()
+    p.add_argument("--local_rank", type=int, default=-1)
     p.add_argument("--model_name_or_path", type=str, default="gpt2")
     p.add_argument("--dataset_name", type=str, default="wikitext")
     p.add_argument("--dataset_config", type=str, default="wikitext-2-raw-v1")
@@ -64,7 +66,7 @@ def main():
     很多decoder-only的模型没有PAD的概念, 他们只有<BOS>和<EOS>, 由于<EOS>本来就代表后面没内容了, padding的语义其实也是, 后面没有有效token, 所以在语义上是兼容的, 可以等效替换.
     """
     model = AutoModelForCausalLM.from_pretrained(args.model_name_or_path)  # 干了很多事情, 下载模型, 加载config, 构建网络结构, 填充权重, 切换到eval状态, 本质是一键恢复完整模型
-    raw = load_dataset(args.dataset_name, args.dataset_config)  # dataset的数据存在磁盘, 但是看起来像在内存, 后面的args.dataset_config可用于指定数据集版本. 它没有使用传统的f.read(), 而是使用了内存映射的方式, 只有在真正访问数据的时候才会从磁盘读取, 这也是为什么它能处理大规模数据的原因. 
+    raw = load_from_disk(args.dataset_name)  # dataset的数据存在磁盘, 但是看起来像在内存, 后面的args.dataset_config可用于指定数据集版本. 它没有使用传统的f.read(), 而是使用了内存映射的方式, 只有在真正访问数据的时候才会从磁盘读取, 这也是为什么它能处理大规模数据的原因. 
 
     def tokenize_fn(examples):
         texts = examples[args.text_field]
@@ -96,7 +98,7 @@ def main():
         overwrite_output_dir=True,  # 如果目录已经存在, 则不报错, 不中断, 直接覆盖
 
         # batch & optimization
-        per_device_train_batch_size=args.per_device_train_batch_size,  # 每张GPU上的batch_size, 不是全局batch_size, 全局batch_size = per_device_train_batch_size * num_gpus * gradient_accumulation_steps
+        per_device_train_batch_size=2,  # 每张GPU上的batch_size, 不是全局batch_size, 全局batch_size = per_device_train_batch_size * num_gpus * gradient_accumulation_steps
         per_device_eval_batch_size=args.per_device_eval_batch_size,
         learning_rate=args.learning_rate,  # 优化器的基础lr, 会传给optimizer
         num_train_epochs=args.num_train_epochs,  # 训练多少轮
