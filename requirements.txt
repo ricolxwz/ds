@@ -2,7 +2,9 @@
 torch==2.2.2
 torchvision==0.17.2
 torchaudio==2.2.2
-transformers
-datasets
+transformers<5
+numpy<2
+datasets>=2.18.0
 accelerate
-deepspeed
+deepspeed<0.16
+setuptools

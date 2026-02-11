@@ -84,6 +84,10 @@ def main():
         desc="Tokenizing",
     )
 
+    # Filter out empty samples that cause reshape errors
+    tokenized = tokenized.filter(lambda x: len(x["input_ids"]) > 0)
+
+
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     """
     负责三件事情:
@@ -111,7 +115,7 @@ def main():
         save_total_limit=2,  # 最多保留两个
 
         # eval
-        evaluation_strategy="steps" if args.do_eval else "no",  # 评估的策略, 每多少步评估一次, 这里设置为每eval_steps评估一次, 如果不评估则设置为no
+        eval_strategy="steps" if args.do_eval else "no",  # 评估的策略, 每多少步评估一次, 这里设置为每eval_steps评估一次, 如果不评估则设置为no
         eval_steps=args.eval_steps if args.do_eval else None,  # 每多少步评估一次, 只有当evaluation_strategy不为no时才有效
 
         # precision
