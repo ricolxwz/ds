@@ -217,4 +217,11 @@ __marimo__/
 
 pythia-410m/
 wikitext-2-raw-v1/
-outputs_pythia/
+wikitext-2-raw-v1-ds/
+outputs*/
+.claude/
+outputs_pythia_peft/
+outputs_pythia_peft_ds_try/
+outputs_pythia_qlora_ds_try/
+pythia-410m
+wikitext-2-raw-v1

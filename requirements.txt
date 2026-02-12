@@ -8,3 +8,5 @@ datasets>=2.18.0
 accelerate
 deepspeed<0.16
 setuptools
+peft
+bitsandbytes>=0.40.0
